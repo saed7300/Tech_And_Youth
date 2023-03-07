@@ -7,24 +7,33 @@ Created on Wed Feb  1 13:43:53 2023
 
 import pandas as pd
 import re
+from wordcloud import WordCloud, ImageColorGenerator
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from nltk.stem import WordNetLemmatizer
+from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer 
 import os, shutil
 import nltk
+import matplotlib.pyplot as plt
+from nltk.tokenize import word_tokenize
+from gensim.parsing.preprocessing import STOPWORDS
+
+all_stopwords_gensim = STOPWORDS.union(set(['old', 'ha', 'wa', 'like', 'hi', 'use', 'getting', 'want']))
+nltk.download('punkt')
 nltk.download('wordnet')
 nltk.download('words')
 words = set(nltk.corpus.words.words())
 stemmer=PorterStemmer()
 lemmatizer = WordNetLemmatizer()
+stop_words = set(stopwords.words('english'))
 
 #Labels = ['Parenting', 'Mental Health', 'Education', 'In Society']
 vector_path = r'C:\Users\sneaz\Documents\Text Mining\Vectors'
 
-path_parenting = r"C:\Users\sneaz\Documents\Text Mining\Parenting"
-path_society= r"C:\Users\sneaz\Documents\Text Mining\In Society"
-path_health = r"C:\Users\sneaz\Documents\Text Mining\Mental Health"
-path_education = r"C:\Users\sneaz\Documents\Text Mining\Education"
+path_parenting = r"C:\Users\sneaz\Documents\Text Mining\Data\Corpus\Parenting"
+path_society= r"C:\Users\sneaz\Documents\Text Mining\Data\Corpus\In Society"
+path_health = r"C:\Users\sneaz\Documents\Text Mining\Data\Corpus\Mental Health"
+path_education = r"C:\Users\sneaz\Documents\Text Mining\Data\Corpus\Education"
 
 
 # for filename in os.listdir(path_education):
@@ -86,7 +95,7 @@ def corpus_path(data, source_name, description_name):
                 outfile.write(description)
             w=w+1
 
-news_apis = pd.read_csv(r'C:\Users\sneaz\Documents\Text Mining\Data from API\NewsAPI_text_labled.csv')
+news_apis = pd.read_csv(r'C:\Users\sneaz\Documents\Text Mining\Data\Data from API\NewsAPI_text_labled.csv')
 news_clean =news_apis
 for index, row in news_clean.iterrows():
     #print(row['Source Description'])
@@ -98,36 +107,84 @@ for index, row in news_clean.iterrows():
     clean_text = stemmer_clean(clean_text)
     clean_text = lemmer_clean(clean_text)
     print(clean_text)
+    clean_text = " ".join(w for w in nltk.wordpunct_tokenize(clean_text)\
+                                 if not w.lower() in stop_words)
+        
     clean_text =  " ".join(w for w in nltk.wordpunct_tokenize(clean_text)\
                            if w.lower() in words or not w.isalpha())
+    clean_text =  " ".join(w for w in nltk.wordpunct_tokenize(clean_text)\
+                               if not w in all_stopwords_gensim)
+
+
+    #print(filtered_sentence)
     clean_text = clean_text.lower()
     news_clean.at[index,'Source Description'] = clean_text
     
 corpus_path(data=news_clean, source_name='newsapi', description_name='Source Description')
 
     
-bingnews_apis = pd.read_csv(r'C:\Users\sneaz\Documents\Text Mining\Data from API\BingNewsAPI_text_labled.csv')
+bingnews_apis = pd.read_csv(r'C:\Users\sneaz\Documents\Text Mining\Data\Data from API\BingNewsAPI_text_labled.csv')
 bing_clean = bingnews_apis
 for index, row in bing_clean.iterrows():
     #print(row['Source Description'])
     clean_text = row['Source Description']
+    print('origional text')
+    print(clean_text)
+    clean_text = re.sub("[^a-zA-Z]+", " ", clean_text,0,re.IGNORECASE) 
+    #clean_text = stemmer_clean(clean_text)
+    clean_text = lemmer_clean(clean_text)
+    clean_text = " ".join(w for w in nltk.wordpunct_tokenize(clean_text)\
+                                 if not w.lower() in stop_words)
+        
+    clean_text =  " ".join(w for w in nltk.wordpunct_tokenize(clean_text)\
+                           if w.lower() in words or not w.isalpha())
+        
+    clean_text =  " ".join(w for w in nltk.wordpunct_tokenize(clean_text)\
+                               if not w in all_stopwords_gensim)
+
+    clean_text = clean_text.lower()
+    print('clean text')
+    print(clean_text)
+    bing_clean.at[index,'Source Description'] = clean_text
+    
+corpus_path(data=bing_clean, source_name='bingapi', description_name='Source Description')
+
+
+news_catcher = pd.read_csv(r'C:\Users\sneaz\Documents\Text Mining\Data\Data from API\NewsCatcher_text2.csv')
+clean_df =news_catcher
+clean_df = clean_df.dropna(subset=['Excerpt'])
+for index, row in clean_df.iterrows():
+    #print(row['Source Description'])
+    clean_text = row['Excerpt']
+    print(clean_text)
+    print(type(clean_text))
+    print(type(clean_text))   
     clean_text = re.sub("[^a-zA-Z]+", " ", clean_text,0,re.IGNORECASE) 
     clean_text = stemmer_clean(clean_text)
     clean_text = lemmer_clean(clean_text)
     print(clean_text)
+    clean_text = " ".join(w for w in nltk.wordpunct_tokenize(clean_text)\
+                                 if not w.lower() in stop_words)
+        
     clean_text =  " ".join(w for w in nltk.wordpunct_tokenize(clean_text)\
                            if w.lower() in words or not w.isalpha())
+        
+    clean_text =  " ".join(w for w in nltk.wordpunct_tokenize(clean_text)\
+                               if not w in all_stopwords_gensim)
+
+
+    #print(filtered_sentence)
     clean_text = clean_text.lower()
-    bing_clean.at[index,'Source Description'] = clean_text
+    clean_df.at[index,'Excerpt'] = clean_text
     
-corpus_path(data=bing_clean, source_name='bingapi', description_name='Source Description')
+corpus_path(data=clean_df, source_name='catcher', description_name='Excerpt')
 
     
 ###Reddit
 #subreddit_list ={'Technology': ['parenting', 'children', 'children mental health', 'children social media'],
  #                'Parenting': ['technology', 'children social media' ,'tablets', 'child iphone', 'video games', 'school technology']}
 
-reddit_text = pd.read_csv(r'C:\Users\sneaz\Documents\Text Mining\Data from API\Reddit.csv')
+reddit_text = pd.read_csv(r'C:\Users\sneaz\Documents\Text Mining\Data\Data from API\Reddit.csv')
 reddit_text['Label']=""
 #Create the lables
 for index, row in reddit_text.iterrows():    
@@ -171,11 +228,17 @@ for index, row in reddit_clean.iterrows():
             clean_text = re.sub(r"[^a-zA-Z]+", ' ', k)
         print(clean_text)
         clean_text = re.sub("[^a-zA-Z]+", " ", clean_text,0,re.IGNORECASE) 
-        clean_text = stemmer_clean(clean_text)
+        #clean_text = stemmer_clean(clean_text)
         clean_text = lemmer_clean(clean_text)
         print(clean_text)
+        clean_text = " ".join(w for w in nltk.wordpunct_tokenize(clean_text)\
+                                     if not w.lower() in stop_words)
         clean_text =  " ".join(w for w in nltk.wordpunct_tokenize(clean_text)\
                                if w.lower() in words or not w.isalpha())
+            
+        clean_text =  " ".join(w for w in nltk.wordpunct_tokenize(clean_text)\
+                                   if not w in all_stopwords_gensim)
+
         clean_text = clean_text.lower()
         reddit_clean.at[index,'Subreddit Text'] = clean_text
         
@@ -192,36 +255,53 @@ corpus_path(data=reddit_subtexts, source_name='reddit', description_name='Subred
 
 #Vectorizing
 #Parenting
-corp_dict = {path_parenting: 'parenting', path_health: 'mental health', path_society:'in society', path_education: 'education'}
-for key in corp_dict:
-    print(key)
-    print(corp_dict[key])
-    path=key
-    label=corp_dict[key]
-    file_names = []
-    for name in os.listdir(path):
-        #print(path+ "\\" + name)
-        next1=path+ "\\" + name
-        file_names.append(next1)
+# corp_dict = {path_parenting: 'parenting', path_health: 'mental health', path_society:'in society', path_education: 'education'}
+# for key in corp_dict:
+#     print(key)
+#     print(corp_dict[key])
+#     path=key
+#     label=corp_dict[key]
+#     file_names = []
+#     for name in os.listdir(path):
+#         #print(path+ "\\" + name)
+#         next1=path+ "\\" + name
+#         file_names.append(next1)
     
-    ###TfidfVectorizor
-    my_vector_tf = TfidfVectorizer(input='filename', stop_words="english", max_df=.80, min_df=.01, max_features=100)
-    vector_tran = my_vector_tf.fit_transform(file_names)
-    col_names = my_vector_tf.get_feature_names()
-    df_tf = pd.DataFrame(vector_tran.toarray(), columns = col_names)
-    df_tf['Label']=label
-    print(df_tf)
-    file_name = label+"tf"+".csv"
-    file_path = os.path.join(vector_path, file_name)
-    df_tf.to_csv(file_path, index=False)
+#     ###TfidfVectorizor
+#     my_vector_tf = TfidfVectorizer(input='filename', stop_words="english", max_df=.80, min_df=.01, max_features=100)
+#     vector_tran = my_vector_tf.fit_transform(file_names)
+#     col_names = my_vector_tf.get_feature_names()
+#     df_tf = pd.DataFrame(vector_tran.toarray(), columns = col_names)
+#     df_tf['Label']=label
+#     print(df_tf)
+#     file_name = label+"tf"+".csv"
+#     file_path = os.path.join(vector_path, file_name)
     
-    my_vector_cv = CountVectorizer(input='filename', stop_words="english", max_df=.80, min_df=.01, max_features=100)
-    vector_tran = my_vector_cv.fit_transform(file_names)
-    col_names = my_vector_cv.get_feature_names()
-    df_cv = pd.DataFrame(vector_tran.toarray(), columns = col_names)
-    df_cv['Label']=label
-    print(df_cv)
-    file_name = label+"cv"+".csv"
-    file_path = os.path.join(vector_path, file_name)
-    df_cv.to_csv(file_path, index=False)
+#     #df_tf.to_csv(file_path, index=False)
+    
+#     my_vector_cv = CountVectorizer(input='filename', stop_words="english", max_df=.80, min_df=.01, max_features=100)
+#     vector_tran = my_vector_cv.fit_transform(file_names)
+#     col_names = my_vector_cv.get_feature_names()
+#     df_cv = pd.DataFrame(vector_tran.toarray(), columns = col_names)
+#     df_cv['Label']=label
+#     print(df_cv)
+#     file_name = label+"cv"+".csv"
+#     file_path = os.path.join(vector_path, file_name)
+#     #df_cv.to_csv(file_path, index=False)
+    
+#     word_clud_data = df_cv.drop(columns=['Label'])
+#     word_clud_data = word_clud_data.T
+#     names = word_clud_data.index.tolist()
+#     word_clud_data['word']=names
+#     sums_wc = pd.DataFrame(word_clud_data.sum())
+#     sums_wc['word']=names
+#     print(sums_wc)
+#     wc = WordCloud().generate_from_frequencies(word_clud_data)
+#     plt.imshow(wc)
+#     plt.axis('off')
+#     plt.show()
+    
+    
+    
+    
 
